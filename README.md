@@ -74,6 +74,10 @@ The following instructions assume that your project files are in `$PWD/home/$USE
  - The folder is not part of container itself, so it will not accupy extra space under container storage.
  - Allows easy restart and reuse of your settings across containers (`.bashrc`, `.local`, `.config`, `.cache` etc).
  - Do not mount your `/home/$USER`! It will expose all your files to AI.
+ - Create such a directory structure:
+ ```shell
+ mkdir -p $PWD/home/$USER/project
+ ```
 
 Example Dockerfiles (contains mostly C/C++/Java development and some extra tools, feel free to modify), choose one and download the files:
  * [Ubuntu 24.04 LTS](docker/ub24-dev.Dockerfile), depends on [entrypoint.sh](docker/entrypoint.sh) for setting up user name & password.
