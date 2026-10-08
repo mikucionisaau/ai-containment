@@ -65,6 +65,87 @@ Claude Code can also be [installed separately as a command line utility `claude`
 
 ## Virtualization
 
+### Windows Services for Linux (WSL2)
+
+1. If you already have a WSL2 container, don't want a second one and just reuse it, then open a root shell in it:
+   ```shell
+   wsl -d Ubuntu-24.04 -u root
+   ```
+   Remove the first-run user from the `sudo`, `adm`, `cdrom` and `plugdev` groups with `gpasswd -d <user> <group>`.
+
+2. To create a new container without the auto-sudo user:
+   ```shell
+   wsl --install -d Ubuntu-24.04 --name claude-sandbox --no-launch
+   wsl -d claude-sandbox -u root
+   ```
+
+3. Configure it in the root shell:
+   ```shell
+   adduser --gecos "" claude          # not in sudo
+   passwd -l root                     # optional
+   cat > /etc/wsl.conf <<'EOF'
+   [user]
+   default=claude
+
+   [automount]
+   enabled=false
+
+   [interop]
+   enabled=false
+   appendWindowsPath=false
+
+   [boot]
+   systemd=true
+   EOF
+   exit
+   ```
+   `/etc/wsl.conf` is inside the container. The automount and interop settings stop it from seeing `C:\` or launching Windows programs.
+
+4. Restart and verify
+   ```shell
+   wsl --terminate claude-sandbox
+   wsl -d claude-sandbox
+
+   groups            # claude users
+   ls /mnt/c         # empty or missing
+   ```
+
+4. Install and run Claude Code (as claude)
+   ```shell
+   curl -fsSL https://claude.ai/install.sh | bash
+   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+   mkdir -p ~/work && cd ~/work
+   claude
+   ```
+   On the first run, copy the login URL into your Windows browser, sign in, and paste the code back.
+
+5. Control what Claude can do  
+   Put enforced rules in `/etc/claude-code/managed-settings.json` (edit as root):
+   ```json
+   {
+     "permissions": {
+       "deny": ["Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(**/.env*)", "Bash(sudo:*)"],
+       "disableBypassPermissionsMode": "disable"
+     }
+   }
+   ```
+   Personal allow rules go in `~/.claude/settings.json`. In a session, `/sandbox` turns on the built-in command sandbox.
+
+6. Day to Day Usage
+
+   * Start: `wsl -d claude-sandbox`, then `cd ~/work/<project> && claude`
+   * Move files: use `git`, or browse `\\wsl$\claude-sandbox\home\claude\work` in Explorer
+   * Stop: `wsl --terminate claude-sandbox`
+   * Admin access: `wsl -d claude-sandbox -u root` from Windows. The claude user can't escalate.
+   * List or delete distros: `wsl -l -v`, and `wsl --unregister <name>` (this permanently deletes everything in it)
+
+**Limits to remember**
+
+   * WSL2 is a VM boundary, not a hardened sandbox, and the network is still open. For an `allowlist`, use a `devcontainer` with a firewall.
+   * Keep secrets out of the distro and use scoped, short-lived tokens per project.
+   * The `wsl.conf` settings apply to the whole distro. Keep a separate distro if you also need a normal WSL environment.
+
+
 ### Docker
 
 The following instructions assume that your project files are in `$PWD/home/$USER/project`:
@@ -79,7 +160,7 @@ The following instructions assume that your project files are in `$PWD/home/$USE
  mkdir -p $PWD/home/$USER/project
  ```
 
-Example Dockerfiles (contains mostly C/C++/Java development and some extra tools, feel free to modify), choose one and download the files:
+Example Dockerfiles (contain mostly C/C++/Java and some extra tools, feel free to modify), choose one and download the files:
  * [Ubuntu 24.04 LTS](docker/ub24-dev.Dockerfile), depends on [entrypoint.sh](docker/entrypoint.sh) for setting up user name & password.
     - Build an image to be called `ub24-dev`:
       ```shell
@@ -208,3 +289,8 @@ More `docker` goodies:
  ```shell
  docker system prune
  ```
+
+## Contributors
+
+ - Marius Mikučionis
+ - Brian Nielsen
