@@ -1,0 +1,214 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+if [ -f /etc/bash.bashrc ]; then
+	. /etc/bash.bashrc
+fi
+
+if [ -z "$BASH_COMPLETION" ] && [ -f /etc/bash_completion ]; then
+	. /etc/bash_completion
+fi
+
+export MAVEN_HOME=/usr/share/maven
+export M2_HOME=/usr/share/maven
+export JUNIT4_HOME=/usr/share/java
+export JUNIT5_HOME=/usr/share/java
+
+export SYSPATH="$PATH"
+export PATH="${PATH:+$PATH:}/sbin"
+
+if [ -d "/opt/local/bin" ]; then
+    export PATH="/opt/local/bin:${PATH:+:$PATH}"
+fi
+
+if [ -d "$HOME/.local/bin" ]; then
+    export PATH="$HOME/.local/bin:${PATH:+:$PATH}"
+fi
+
+if [ -d "/opt/local/lib/perl5" ]; then
+    PERL5LIB="/opt/local/lib/perl5${PERL5LIB:+:${PERL5LIB}}"
+fi
+
+for dir in /usr/share/man /usr/local/man /usr/local/share/man /opt/local/share/man ; do
+    if [ -d "$dir" ] ; then export MANPATH="$dir${MANPATH:+:$MANPATH}" ; fi
+done
+
+if [ -d "$HOME/go-home" ] ; then
+    export GO_HOME="$HOME/go-home"
+    if [ -d "$GO_HOME/bin" ]; then
+        export PATH="$GO_HOME/bin:$PATH"
+    fi
+fi
+
+#CARGO_HOME=$HOME/.cargo
+#if [ -d "$CARGO_HOME" ]; then
+#    export PATH="$CARGO_HOME/bin":"$PATH"
+#fi
+
+LESS_COMMAND=$(command -v less)
+if [ -n "$LESS_COMMAND" ] ; then
+    export PAGER="$LESS_COMMAND"
+    if [ -n "$(command -v lesspipe)" ] ; then eval $(lesspipe) ; fi
+    if [ -x "/usr/share/source-highlight/src-hilite-lesspipe.sh" ]; then
+        LESS_HIGHLIGHT="| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
+    fi
+    export LESS="${LESS+$LESS }-R"
+fi
+
+less()
+{
+    # https://gist.github.com/textarcana/4611277#gistcomment-2859093
+    if [ -z "$LESS_COMMAND" ]; then echo '`less` is not installed'; return; fi
+    has_file=false
+    all_text=true
+    for arg in "$@" ; do
+        if [[ "$arg" != -* ]] && [ -e "$arg" ]; then
+            has_file=true
+            enc=$(file -b --mime-encoding "$(realpath $arg)")
+            if [[ "$enc" != *"-ascii" ]] && [ "$enc" != "utf-8" ] && [ "$enc" != "iso-8859-1" ] ; then
+                all_text=false
+                break
+            fi
+        fi
+    done
+    if [ "$has_file" == true ] && [ "$all_text" == true ]; then
+        #LESSOPEN="$LESS_HIGHLIGHT" LESS="$LESS -N" "$LESS_COMMAND" "$@"
+        LESSOPEN="$LESS_HIGHLIGHT" "$LESS_COMMAND" "$@"
+        # batcat "$@"
+    else
+        "$LESS_COMMAND" "$@"
+    fi
+}
+
+function settabwidth() {
+    # https://stackoverflow.com/a/20453925/2685239
+    TABWIDTH=$1
+    export LESS="${LESS+$LESS }--tabs ${TABWIDTH}"
+#    setterm -regtabs ${TABWIDTH} </dev/tty
+    tabs -0 </dev/tty
+    tabs 1$(for i in {0..40}; do echo -n ",+${TABWIDTH}"; done)
+    unset TABWIDTH
+}
+
+export TIME="%U user, %S kernel, %e elapsed, %E wall-clock, %M kb_MaxRSS"
+
+# history hacks:
+shopt -s histappend
+set -o histexpand
+HISTCONTROL=erasedups
+HISTSIZE=3000
+set -o emacs
+#set -o history
+# Page-Up:
+bind '"\e[5~":history-search-backward'
+# Page-Down:
+bind '"\e[6~":history-search-forward'
+# check the key sequence with "od -c"
+
+# remote cvs repository for UPPAAL:
+#export CVS_RSH="ssh -p 4711"
+#export SVN_SSH="ssh -p 4711"
+
+# use all cores when compiling linux:
+export CONCURRENCY_LEVEL=$(nproc)
+
+# what permissions to remove for new files
+umask 027
+
+cmd=$(command -v emacs)
+if [ -n "$cmd" ] ; then
+	alias em="$cmd -nw -bg black"
+    export EDITOR="$cmd -nw"
+    export XEDITOR="$cmd -bg black"
+fi
+
+case $TERM in
+    xterm*|rxvt*|screen*|tmux*|linux*)
+	    if [ ! -z "$PS1" ] ; then
+            # interactive prompt => use colors
+	        ENABLE_COLORS=1
+	        PROMPT_DIRTRIM=1
+        fi
+	    ;;
+esac
+
+if [ -v ENABLE_COLORS ]; then
+    if [ -n "$(command -v dircolors)" ] && [ -e ~/.dircolors ] ; then
+	    eval $(dircolors ~/.dircolors)
+    fi
+    export GREP_COLOR="mt=01;31"
+    color="--color=auto"
+    alias grep="grep $color"
+    # Less Colors for Man Pages
+    export LESS_TERMCAP_mb=$'\E[01;31m'       # begin blinking
+    export LESS_TERMCAP_md=$'\E[01;38;5;74m'  # begin bold
+    export LESS_TERMCAP_me=$'\E[0m'           # end mode
+    export LESS_TERMCAP_se=$'\E[0m'           # end standout-mode
+    export LESS_TERMCAP_so=$'\E[38;5;246m'    # begin standout-mode - info box
+    export LESS_TERMCAP_ue=$'\E[0m'           # end underline
+    export LESS_TERMCAP_us=$'\E[04;38;5;146m' # begin underline
+
+#    export LESS_TERMCAP_mb=$(printf "\e[1;31m")
+#    export LESS_TERMCAP_md=$(printf "\e[1;31m")
+#    export LESS_TERMCAP_me=$(printf "\e[0m")
+#    export LESS_TERMCAP_se=$(printf "\e[0m")
+    export LESS_TERMCAP_so=$(printf "\e[1;44;33m")
+#    export LESS_TERMCAP_ue=$(printf "\e[0m")
+    export LESS_TERMCAP_us=$(printf "\e[1;32m")
+    settabwidth 4
+
+    if [ $(id -u) == 0 ]; then
+	    hostcolor='\[\033[1;31m\]\h\[\033[0;37m\]'
+    elif [ -n "$SSH_AUTH_SOCK" ]; then
+	    hostcolor='\[\033[1;33m\]\h\[\033[0;37m\]'
+    else
+	    hostcolor='\[\033[1;32m\]\h\[\033[0;37m\]'
+    fi
+    # set the colorful prompt:
+    if [ -n "$(command -v __git_ps1)" ] ; then
+	    export GIT_PS1_SHOWDIRTYSTATE=true
+	    export GIT_PS1_SHOWSTASHSTATE=true
+	    #export GIT_PS1_SHOWCOLORHINTS=true
+	    #export GIT_PS1_SHOWUPSTREAM=auto
+	    #export GIT_PS1_SHOWUNTRACKEDFILES=true
+	    PS1="$hostcolor"':$(__git_ps1 "[\[\033[1;32m\]%s\[\033[0;37m\]]")\[\033[1;34m\]\w\[\033[0;37m\]$\[\033[0m\] '
+	    #PS1='\[\033[1;33m\]\h\[\033[0;37m\]:$(__git_ps1 "[\[\033[1;32m\]%s\[\033[0;37m\]]" "\\\$")\[\033[1;34m\]\w\[\033[0;37m\]$\[\033[0m\] '
+	    #export PROMPT_COMMAND='__git_ps1 "\h:\w" "\\\$ "'
+    else
+	    PS1="$hostcolor"':\[\033[1;34m\]\w\[\033[0;37m\]$\[\033[0m\] '
+    fi
+    if [ "$TERM" != "linux" ] ; then
+	    # set the tittle of the terminal:
+	    export PROMPT_COMMAND='echo -ne "\033]0;${HOSTNAME}:${PWD}\007"'
+    fi
+    echo -e "\033[01;37;44m${USER}@${HOSTNAME}\033[01;37;40m $(date +'%T %A %F')\033[0m"
+fi
+
+alias mv="mv -i"
+alias cp="cp -i"
+alias lf="ls -FXv $color --time-style=long-iso --group-directories-first"
+alias lfa="ls -FXva $color --time-style=long-iso --group-directories-first"
+alias l="ls -lXvh $color --time-style=long-iso --group-directories-first"
+alias ll="ls -lXv $color --time-style=long-iso --group-directories-first"
+alias lh="ls -lXvh $color --time-style=long-iso --group-directories-first"
+alias la="ls -laXvA $color --time-style=long-iso --group-directories-first"
+alias ls="ls $color --time-style=long-iso --group-directories-first"
+
+export GPG_TTY=$(tty)
+
+export XZ_DEFAULTS="-T0"
+
+# use all cores for compilation:
+export CORES=$(nproc)
+export CONCURRENCY_LEVEL=$CORES
+export CMAKE_BUILD_PARALLEL_LEVEL=$CORES
+export CTEST_PARALLEL_LEVEL=$CORES
+export CTEST_OUTPUT_ON_FAILURE=1
+export CTEST_TEST_LOAD=$CORES
+if [ -n "$(command -v ninja)" ] ; then
+    export CMAKE_GENERATOR=Ninja
+fi

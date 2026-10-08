@@ -28,7 +28,7 @@ RUN apt-get -qq update && apt-get -qq install sudo ripgrep bubblewrap socat secc
 # Lastly: upgrade and clean
 RUN apt-get -qq update && apt-get -qq upgrade && apt-get -qq clean
 
-COPY bashrc /root/.bashrc
+# Disable login noise
 RUN rm -f /etc/update-motd.d/60-unminimize /etc/update-motd.d/10-help-text
 
 # Entrypoint: creates user and password at runtime from $PASSWORD env var

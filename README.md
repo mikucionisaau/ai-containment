@@ -2,9 +2,9 @@
 
 ## What could possibly go wrong?
 
-**AI is not evil (yet), but *Ambiguity* leads to *Unintended* Consequences**
+**AI is not evil (yet), but *Ambiguity* leads to [*Unintended* Consequences](https://en.wikipedia.org/wiki/Unintended_consequences) and [Murphy's Law](https://en.wikipedia.org/wiki/Murphy%27s_law).**
 
- * LLMs are increasingly *proactive*: often *guess* and *implement* **without consulting** their user.
+ * AI agents are increasingly *proactive*: often *guess* and *implement* **without consulting** their user.
  * Prompts like `is XYZ possible?` or `how can XYZ be done?` **may modify files**
    - Prompt acts as a working hypothesis: AI implements and provides a proof, without a proof it speculates.
    - Instead, you may just give a (vague) order: `perform/implement XYZ`
@@ -42,6 +42,7 @@
    - AI may retry with **dangerouslyDisableSandbox**. Disable: set `"allowUnsandboxedCommands": false`
    - ...
 
+
 ## Specific Instructions
 
 ### Claude Desktop
@@ -51,15 +52,16 @@ Training can be turned off in the Privacy Settings:
 By default, Claude Desktop uses the remote workspace (project files) in the cloud.
 Just like web interface, Claude Desktop does not have access to local resources unless the resources are uploaded.
 
-Claude Desktop also includes Claude Code which *has access* to **all the local resources** available to the operating system.
+Claude Desktop also includes Claude Code which *has access* to **all the local resources**, hence risky.
 
-Claude Code can be switched by using the widget at the top of the window:
+Claude Code can be switched to by using the widget at the top of the window:
 
 ![Claude Privacy Settings](img/claude-switch-widget.png)
 
 Claude Code can also be [installed separately as a command line utility `claude`](https://code.claude.com/docs/en/quickstart):
 
 ![Claude Privacy Settings](img/claude-code-terminal.png)
+
 
 ## Virtualization
 
@@ -89,7 +91,7 @@ Example Dockerfiles (contains mostly C/C++/Java development and some extra tools
       ```shell
       ssh -p 2404 localhost
       ```
-    - Simplify the access by adding `dev24` container to your `~/.ssh/config`:
+    - Simplify `ssh` access by adding `dev24` container to your `~/.ssh/config`:
       ```ssh_config
       Host dev24
       ForwardX11Trusted yes
@@ -139,7 +141,7 @@ Example Dockerfiles (contains mostly C/C++/Java development and some extra tools
       ```shell
       ssh -p 2604 localhost
       ```
-    - Simplify the access by adding `dev26` container to your `~/.ssh/config`:
+    - Simplify `ssh` access by adding `dev26` container to your `~/.ssh/config`:
       ```ssh_config
       Host dev26
       ForwardX11Trusted yes
@@ -175,7 +177,21 @@ Example Dockerfiles (contains mostly C/C++/Java development and some extra tools
       docker stop dev26
       ```
 
-Some more `docker` common comands:
+Once in container shell, install your favorite CLI coding agent:
+ * [Claude Code](https://code.claude.com/docs/en/quickstart)
+ * [Microsoft Copilot](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli)
+ * [OpenAI Codex](https://learn.chatgpt.com/docs/codex/cli)
+ * [Mistral Vibe](https://docs.mistral.ai/vibe/code/cli/install-setup)
+ * [Grok Build](https://grok.com/build)
+
+More container customizations:
+ * Copy [bashrc](docker/bashrc) into your container to color the CLI prompt in green when ssh-agent keys are not available, yellow when ssh-agent keys are available (danger) and red when using root shell (super danger):
+ ```shell
+ cp bashrc $PWD/home/$USER/.bashrc
+ scp bashrc dev24:/root/.bashrc
+ ```
+
+More `docker` goodies:
  * List available images:
  ```shell
  docker images
@@ -184,8 +200,7 @@ Some more `docker` common comands:
  ```shell
  docker image rm ub24-dev
  ```
- * Recover disk space of removed images:
+ * Recover disk space of removed/unused images:
  ```shell
  docker system prune
  ```
-
