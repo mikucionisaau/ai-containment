@@ -13,7 +13,9 @@
       - may provide (new) options and insights that you overlooked or they did not exist before.
  * `implement XYZ` (but you “forgot” to provide infrastructure and/or specify details)
    - AI may *assume* some infrastructure and attempt to use it and **fail**, but instead of stopping/consulting:
-   - AI may *search* the **project folder**, the **entire computer**, then **entire internet**...
+   - AI may *search* the **project folder**, the **entire computer**, then **entire internet**... and find
+      - your keys, auth. tokens, browser cookies, unfinished work
+      - your students' work and grades, partner company documents
    - AI may *spend lots of tokens* for analysing unnecessary/unrelated material.
    - AI may *find* and **(re)use** material that was not meant to be (re)used, **may violate copyright law**.
    - AI may *upload* the material into cloud for analysis (*more tokens*) and/or training (*leak* and **distribute**).
@@ -156,20 +158,25 @@ The following instructions assume that your project files are in `$PWD/home/$USE
  - Allows easy restart and reuse of your settings across containers (`.bashrc`, `.local`, `.config`, `.cache` etc).
  - Do not mount your `/home/$USER`! It will expose all your files to AI.
  - Create such a directory structure:
- ```shell
- mkdir -p $PWD/home/$USER/project
- ```
+   ```shell
+   mkdir -p "$PWD/home/$USER/project"
+   ```
+ - Clone this repo and store the path to docker files in JAIL variable:
+   ```shell
+   git clone https://github.com/mikucionisaau/ai-containment.git
+   JAIL="$PWD/ai-containment/docker"
+   ```
 
 Example Dockerfiles (contain mostly C/C++/Java and some extra tools, feel free to modify), choose one and download the files:
  * [Ubuntu 24.04 LTS](docker/ub24-dev.Dockerfile), depends on [entrypoint.sh](docker/entrypoint.sh) for setting up user name & password.
     - Build an image to be called `ub24-dev`:
       ```shell
-      docker build -f ub24-dev.Dockerfile -t ub24-dev .
+      docker build -f "$JAIL/ub24-dev.Dockerfile" -t ub24-dev "$JAIL"
       ```
     - Spin up a container named `dev24` and expose its `ssh-server` on host port `2404`, and with project home directory mounted, remember to change the password (for `ssh` to container):
       ```shell
       docker run -d --hostname dev24 --name "dev24" -p 127.0.0.1:2404:22  \
-         --mount type=bind,src=$PWD/home,dst=/home -e USERNAME=$USER -e USERID=$(id -u) -e GROUPID=$(id -g)  \
+         --mount type=bind,src="$PWD/home",dst=/home -e USERNAME=$USER -e USERID=$(id -u) -e GROUPID=$(id -g)  \
          -e PASSWORD=changeme ub24-dev
       ```
     - Test the connection, use the password from the step above:
@@ -179,7 +186,8 @@ Example Dockerfiles (contain mostly C/C++/Java and some extra tools, feel free t
     - Simplify `ssh` access by adding `dev24` container to your `~/.ssh/config`:
       ```ssh_config
       Host dev24
-      ForwardX11Trusted yes
+      ForwardX11 yes
+      ForwardX11Trusted no
       ForwardAgent no
       Hostname localhost
       Port 2404
@@ -189,7 +197,7 @@ Example Dockerfiles (contain mostly C/C++/Java and some extra tools, feel free t
       ```
     - Copy your public ssh key to `dev24`:
       ```shell
-      ssh-copy-id ~/.ssh/id_rsa.pub dev24
+      ssh-copy-id dev24
       ```
     - Try connecting again:
       ```shell
@@ -214,12 +222,12 @@ Example Dockerfiles (contain mostly C/C++/Java and some extra tools, feel free t
  * [Ubuntu 26.04 LTS](docker/ub26-dev.Dockerfile), depends on [entrypoint.sh](docker/entrypoint.sh) for setting up user name & password.
     - Build an image to be called `ub26-dev`:
       ```shell
-      docker build -f ub26-dev.Dockerfile -t ub26-dev .
+      docker build -f "$JAIL/ub26-dev.Dockerfile" -t ub26-dev "$JAIL"
       ```
     - Spin up a container named `dev26` and expose its `ssh-server` on host port `2604`, and with project home directory mounted, remember to change the password (for `ssh` to container):
       ```shell
       docker run -d --hostname dev26 --name "dev26" -p 127.0.0.1:2604:22  \
-         --mount type=bind,src=$PWD/home,dst=/home -e USERNAME=$USER -e USERID=$(id -u) -e GROUPID=$(id -g)  \
+         --mount type=bind,src="$PWD/home",dst=/home -e USERNAME=$USER -e USERID=$(id -u) -e GROUPID=$(id -g)  \
          -e PASSWORD=changeme ub26-dev
       ```
     - Test the connection, use the password from the step above:
@@ -229,7 +237,8 @@ Example Dockerfiles (contain mostly C/C++/Java and some extra tools, feel free t
     - Simplify `ssh` access by adding `dev26` container to your `~/.ssh/config`:
       ```ssh_config
       Host dev26
-      ForwardX11Trusted yes
+      ForwardX11 yes
+      ForwardX11Trusted no
       ForwardAgent no
       Hostname localhost
       Port 2604
@@ -239,7 +248,7 @@ Example Dockerfiles (contain mostly C/C++/Java and some extra tools, feel free t
       ```
     - Copy your public ssh key to `dev26`:
       ```shell
-      ssh-copy-id ~/.ssh/id_rsa.pub dev26
+      ssh-copy-id dev26
       ```
     - Try connecting again:
       ```shell
@@ -271,24 +280,25 @@ Once in container shell, install your favorite CLI coding agent:
 
 More container customizations:
  * Copy [bashrc](docker/bashrc) into your container to color the CLI prompt in green when ssh-agent keys are not available, yellow when ssh-agent keys are available (danger) and red when using root shell (super danger):
- ```shell
- cp bashrc $PWD/home/$USER/.bashrc
- scp bashrc dev24:/root/.bashrc
- ```
+   ```shell
+   cp "$JAIL/bashrc" "$PWD/home/$USER/.bashrc"
+   echo 'if [ -f ~/.bashrc ]; then . ~/.bashrc; fi' >> "$PWD/home/$USER/.bash_profile"
+   scp "$JAIL/bashrc" dev24:/root/.bashrc
+   ```
 
 More `docker` goodies:
  * List available images:
- ```shell
- docker images
- ```
+   ```shell
+   docker images
+   ```
  * Delete image `ub24-dev`:
- ```shell
- docker image rm ub24-dev
- ```
+   ```shell
+   docker image rm ub24-dev
+   ```
  * Recover disk space of removed/unused images:
- ```shell
- docker system prune
- ```
+   ```shell
+   docker system prune
+   ```
 
 ## Contributors
 
